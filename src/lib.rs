@@ -1,4 +1,4 @@
-use bdsp_ug_generator::{Advance, Pokemon, RoomType, run_results, Version};
+use bdsp_ug_generator::{run_results, Advance, Pokemon, RoomType, Version};
 use pyo3::prelude::*;
 
 #[pyclass]
@@ -7,7 +7,7 @@ struct AdvancePy {
     #[pyo3(get)]
     regular_pokemon: Vec<PokemonPy>,
     #[pyo3(get)]
-    rare_pokemon: Option<PokemonPy>
+    rare_pokemon: Option<PokemonPy>,
 }
 
 #[pyclass]
@@ -35,34 +35,45 @@ struct PokemonPy {
     egg_move: Option<u16>,
 }
 
-impl Into<AdvancePy> for Advance {
-    fn into(self) -> AdvancePy {
-        AdvancePy {
-            regular_pokemon: self.regular_pokemon.into_iter().map(|p| p.into()).collect::<Vec<PokemonPy>>(),
-            rare_pokemon: self.rare_pokemon.map(|p| p.into())
+impl From<Advance> for AdvancePy {
+    fn from(a: Advance) -> Self {
+        Self {
+            regular_pokemon: a
+                .regular_pokemon
+                .into_iter()
+                .map(|p| p.into())
+                .collect::<Vec<PokemonPy>>(),
+            rare_pokemon: a.rare_pokemon.map(|p| p.into()),
         }
     }
 }
 
-impl Into<PokemonPy> for Pokemon {
-    fn into(self) -> PokemonPy {
-        PokemonPy {
-            species: self.species,
-            ec: self.ec,
-            pid: self.pid,
-            shiny: self.shiny,
-            ivs: self.ivs,
-            ability: self.ability,
-            gender: self.gender,
-            nature: self.nature,
-            item: self.item,
-            egg_move: self.egg_move
+impl From<Pokemon> for PokemonPy {
+    fn from(p: Pokemon) -> Self {
+        Self {
+            species: p.species,
+            ec: p.ec,
+            pid: p.pid,
+            shiny: p.shiny,
+            ivs: p.ivs,
+            ability: p.ability,
+            gender: p.gender,
+            nature: p.nature,
+            item: p.item,
+            egg_move: p.egg_move,
         }
     }
 }
 
 #[pyfunction]
-fn generate_results(advances: u32, s0: u32, s1: u32, s2: u32, s3: u32, version: u8, story_flag: u8, room: u8, shiny_only: bool) -> PyResult<Vec<AdvancePy>> {
+fn generate_results(
+    advances: u32,
+    state: [u32; 4],
+    version: u8,
+    story_flag: u8,
+    room: u8,
+    shiny_only: bool,
+) -> PyResult<Vec<AdvancePy>> {
     let version = match version {
         2 => Version::BD,
         _ => Version::SP,
@@ -86,12 +97,17 @@ fn generate_results(advances: u32, s0: u32, s1: u32, s2: u32, s3: u32, version: 
         16 => RoomType::StargleamCavern,
         17 => RoomType::GlacialCavern,
         18 => RoomType::BogsunkCavern,
-        _ => RoomType::TyphloCavern
+        _ => RoomType::TyphloCavern,
     };
 
-    let results = run_results(advances, s0, s1, s2, s3, version, story_flag, room, shiny_only);
+    let results = run_results(
+        advances, state[0], state[1], state[2], state[3], version, story_flag, room, shiny_only,
+    );
 
-    Ok(results.into_iter().map(|a| a.into()).collect::<Vec<AdvancePy>>())
+    Ok(results
+        .into_iter()
+        .map(|a| a.into())
+        .collect::<Vec<AdvancePy>>())
 }
 
 #[pymodule]
