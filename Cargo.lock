@@ -21,8 +21,8 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "bdsp_ug_generator"
-version = "0.1.0"
-source = "git+https://github.com/SteveCookTU/bdsp_ug_generator.git?rev=cf3ac23#cf3ac235e9581d2a83d0810354c7b69abb66fe82"
+version = "0.2.3"
+source = "git+https://github.com/SteveCookTU/bdsp_ug_generator.git?rev=4a699ce#4a699ce4910ee071ac6f4bc406e9c9a64cc0b91d"
 dependencies = [
  "clap",
  "lazy_static",

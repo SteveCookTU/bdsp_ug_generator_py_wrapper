@@ -11,4 +11,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.16.5", features = ["extension-module"] }
-bdsp_ug_generator = { git = "https://github.com/SteveCookTU/bdsp_ug_generator.git", rev = "cf3ac23"}
+bdsp_ug_generator = { git = "https://github.com/SteveCookTU/bdsp_ug_generator.git", rev = "4a699ce"}

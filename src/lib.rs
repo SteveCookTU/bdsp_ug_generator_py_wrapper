@@ -1,9 +1,12 @@
-use bdsp_ug_generator::{run_results, Advance, Pokemon, RoomType, Version};
+use bdsp_ug_generator::{run_results, Advance, Pokemon, RoomType, Version, Filter};
+use bdsp_ug_generator::xorshift::XorShift;
 use pyo3::prelude::*;
 
 #[pyclass]
 #[derive(Clone)]
 struct AdvancePy {
+    #[pyo3(get)]
+    advance: u32,
     #[pyo3(get)]
     regular_pokemon: Vec<PokemonPy>,
     #[pyo3(get)]
@@ -24,7 +27,7 @@ struct PokemonPy {
     #[pyo3(get)]
     ivs: [u8; 6],
     #[pyo3(get)]
-    ability: u16,
+    ability: u8,
     #[pyo3(get)]
     gender: u8,
     #[pyo3(get)]
@@ -35,9 +38,58 @@ struct PokemonPy {
     egg_move: Option<u16>,
 }
 
+#[pyclass]
+#[derive(Clone)]
+struct FilterPy {
+    pub shiny: bool,
+    pub species: Option<u16>,
+    pub min_ivs: [u8; 6],
+    pub max_ivs: [u8; 6],
+    pub ability: Option<u8>,
+    pub nature: Option<Vec<u8>>,
+    pub item: Option<u16>,
+    pub egg_move: Option<u16>,
+    pub gender: Option<u8>,
+}
+
+#[pymethods]
+impl FilterPy {
+    #[new]
+    fn new(shiny: bool, species: Option<u16>, min_ivs: [u8; 6], max_ivs: [u8; 6], ability: Option<u8>, nature: Option<Vec<u8>>, item: Option<u16>, egg_move: Option<u16>, gender: Option<u8>) -> Self {
+        Self {
+            shiny,
+            species,
+            min_ivs,
+            max_ivs,
+            ability,
+            nature,
+            item,
+            egg_move,
+            gender
+        }
+    }
+}
+
+impl Into<Filter> for FilterPy {
+    fn into(self) -> Filter {
+        Filter {
+            shiny: self.shiny,
+            species: self.species,
+            min_ivs: self.min_ivs,
+            max_ivs: self.max_ivs,
+            ability: self.ability,
+            nature: self.nature,
+            item: self.item,
+            egg_move: self.egg_move,
+            gender: self.gender
+        }
+    }
+}
+
 impl From<Advance> for AdvancePy {
     fn from(a: Advance) -> Self {
         Self {
+            advance: a.advance,
             regular_pokemon: a
                 .regular_pokemon
                 .into_iter()
@@ -72,7 +124,8 @@ fn generate_results(
     version: u8,
     story_flag: u8,
     room: u8,
-    shiny_only: bool,
+    filter: FilterPy,
+    diglett: bool,
 ) -> PyResult<Vec<AdvancePy>> {
     let version = match version {
         2 => Version::BD,
@@ -100,8 +153,10 @@ fn generate_results(
         _ => RoomType::TyphloCavern,
     };
 
+    let rng = XorShift::from_state(state);
+
     let results = run_results(
-        advances, state[0], state[1], state[2], state[3], version, story_flag, room, shiny_only,
+        advances, rng, version, story_flag, room, filter.into(), diglett,
     );
 
     Ok(results
@@ -112,6 +167,9 @@ fn generate_results(
 
 #[pymodule]
 fn bdsp_ug_generator_py(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+    m.add_class::<AdvancePy>()?;
+    m.add_class::<PokemonPy>()?;
+    m.add_class::<FilterPy>()?;
     m.add_function(wrap_pyfunction!(generate_results, m)?)?;
     Ok(())
 }
